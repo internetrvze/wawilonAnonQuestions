@@ -26,7 +26,7 @@ class Logger():
     @lru_cache()
     def __init__(self) -> None:
         load_dotenv()
-        self.logger = AsyncTeleBot(getenv('LOGGER_BOT_TOKEN'))
+        self.logger = AsyncTeleBot(getenv('BOT_LOGGER_TOKEN'))
         self.chat_id = int(getenv('LOGS_RECEIVER_ID'))
         self.logTime = ''
 

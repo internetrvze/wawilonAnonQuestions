@@ -25,7 +25,8 @@ async def setup() -> None:
                 'user INTEGER NOT NULL, '
                 'full_name TEXT, '
                 'question_id INTEGER NOT NULL, '
-                'question TEXT'
+                'question TEXT,'
+                'other_user INTEGER NOT NULL'
                 ')'
             )
             await logger.asyncLogger(

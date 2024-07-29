@@ -28,15 +28,18 @@ async def get_length() -> int:
 
 
 async def dloadQuestion(
-    user_id: int, full_name: str, question: str
-) -> None:
+    user_id: int, full_name: str, question: str, other_user: int
+) -> int:
     async with connect(DB_HOST) as _DB:
         qid = (await get_length()) + 1
         await _DB.execute(
-            'INSERT INTO questions (user, name, question_id, question) VALUES'
-            f' ({user_id}, "{full_name}", {qid}, "{question}")'
+            'INSERT INTO questions ('
+            'user, name, other_user, question_id, question'
+            ') VALUES ('
+            f'{user_id}, "{full_name}", {other_user}, {qid}, "{question}"'
+            ')'
         )
-        return await _DB.commit()
+    return qid
 
 
 async def getState(user_id: int) -> int:
@@ -49,7 +52,9 @@ async def getState(user_id: int) -> int:
             return 0
 
 
-async def setState(user_id: int, state: Literal['question', 'main'], other_user: int) -> None:
+async def setState(
+    user_id: int, state: Literal['question', 'main'], other_user: int | None = None
+) -> None:
     async with connect(DB_HOST) as _DB:
         async with _DB.execute_fetchall(
             f'SELECT state FROM states WHERE user={user_id}'
@@ -58,12 +63,12 @@ async def setState(user_id: int, state: Literal['question', 'main'], other_user:
                 if not other_user:
                     await _DB.execute(
                         'INSERT INTO states (user, state) VALUES '
-                        f'({user_id}, {state})'
+                        f'({user_id}, "{state}")'
                     )
                 else:
                     await _DB.execute(
-                        'INSERT INTO states (user, state) VALUES '
-                        f'({user_id}, {state})'
+                        'INSERT INTO states (user, state, other_user) VALUES '
+                        f'({user_id}, "{state}", {other_user})'
                     )
 
             else:
@@ -73,5 +78,8 @@ async def setState(user_id: int, state: Literal['question', 'main'], other_user:
     return await _DB.commit()
 
 
-async def getRow() -> tuple[int, str]:
-    ...
+async def getRow(qid: int) -> tuple[int, str]:
+    async with connect(DB_HOST) as _DB:
+        async with _DB.execute_fetchall(
+            f'SELECT user, name FROM users WHERE question_id={qid}'
+        )
