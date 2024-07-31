@@ -59,3 +59,5 @@ async def setup() -> None:
                 f'Error: {errorText}',
                 module='WAWILON-ANONQUESTIONS'
             )
+
+setup()

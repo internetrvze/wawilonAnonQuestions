@@ -42,18 +42,20 @@ async def dloadQuestion(
     return qid
 
 
-async def getState(user_id: int) -> int:
+async def getState(user_id: int) -> tuple(int, int):
     async with connect(DB_HOST) as _DB:
         async with _DB.execute_fetchall(
             f'SELECT state FROM states WHERE user={user_id}'
         ) as _STAGE:
             if _STAGE[0][1] == 'question':
-                return _STAGE[0][2]
-            return 0
+                return _STAGE[0][2], 0
+            elif _STAGE[0][1] == 'answer':
+                return _STAGE[0][0], 1
+            return 0, 0
 
 
 async def setState(
-    user_id: int, state: Literal['question', 'main'], other_user: int | None = None
+    user_id: int, state: Literal['question', 'main', 'answer'], other_user: int | None = None
 ) -> None:
     async with connect(DB_HOST) as _DB:
         async with _DB.execute_fetchall(
@@ -82,4 +84,7 @@ async def getRow(qid: int) -> tuple[int, str]:
     async with connect(DB_HOST) as _DB:
         async with _DB.execute_fetchall(
             f'SELECT user, name FROM users WHERE question_id={qid}'
-        )
+        ) as _STAGE:
+            if len(_STAGE[0]) > 1:
+                return _STAGE[0]
+            return (0, '')
