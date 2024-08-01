@@ -34,20 +34,23 @@ async def dloadQuestion(
         qid = (await get_length()) + 1
         await _DB.execute(
             'INSERT INTO questions ('
-            'user, name, other_user, question_id, question'
+            'user, full_name, other_user, question_id, question'
             ') VALUES ('
             f'{user_id}, "{full_name}", {other_user}, {qid}, "{question}"'
             ')'
         )
+        await _DB.commit()
     return qid
 
 
-async def getState(user_id: int) -> tuple(int, int):
+async def getState(user_id: int) -> tuple[int, int]:
     async with connect(DB_HOST) as _DB:
         async with _DB.execute_fetchall(
-            f'SELECT state FROM states WHERE user={user_id}'
+            f'SELECT * FROM states WHERE user={user_id}'
         ) as _STAGE:
-            if _STAGE[0][1] == 'question':
+            if not _STAGE:
+                return 0, 0
+            elif _STAGE[0][1] == 'question':
                 return _STAGE[0][2], 0
             elif _STAGE[0][1] == 'answer':
                 return _STAGE[0][0], 1
@@ -55,35 +58,44 @@ async def getState(user_id: int) -> tuple(int, int):
 
 
 async def setState(
-    user_id: int, state: Literal['question', 'main', 'answer'], other_user: int | None = None
+    user_id: int,
+    state: Literal['question', 'main', 'answer'],
+    other_user: int | None = None
 ) -> None:
     async with connect(DB_HOST) as _DB:
-        async with _DB.execute_fetchall(
+        _STAGE = await _DB.execute_fetchall(
             f'SELECT state FROM states WHERE user={user_id}'
-        ) as _STAGE:
-            if not _STAGE:
-                if not other_user:
-                    await _DB.execute(
-                        'INSERT INTO states (user, state) VALUES '
-                        f'({user_id}, "{state}")'
-                    )
-                else:
-                    await _DB.execute(
-                        'INSERT INTO states (user, state, other_user) VALUES '
-                        f'({user_id}, "{state}", {other_user})'
-                    )
-
+        )
+        if not _STAGE:
+            if not other_user:
+                await _DB.execute(
+                    'INSERT INTO states (user, state) VALUES '
+                    f'({user_id}, "{state}")'
+                )
             else:
+                await _DB.execute(
+                    'INSERT INTO states (user, state, other_user) VALUES '
+                    f'({user_id}, "{state}", {other_user})'
+                )
+
+        else:
+            if not other_user:
                 await _DB.execute(
                     f'UPDATE states SET state="{state}" WHERE user={user_id}'
                 )
-    return await _DB.commit()
+            else:
+                await _DB.execute(
+                    'UPDATE states SET '
+                    f'state="{state}", other_user={other_user} '
+                    f'WHERE user={user_id}'
+                )
+        return await _DB.commit()
 
 
 async def getRow(qid: int) -> tuple[int, str]:
     async with connect(DB_HOST) as _DB:
         async with _DB.execute_fetchall(
-            f'SELECT user, name FROM users WHERE question_id={qid}'
+            f'SELECT user, full_name FROM questions WHERE question_id={qid}'
         ) as _STAGE:
             if len(_STAGE[0]) > 1:
                 return _STAGE[0]

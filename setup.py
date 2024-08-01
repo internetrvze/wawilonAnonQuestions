@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 from functools import lru_cache
 from logger import Logger, LoggingLevel
 from os import getenv
+from asyncio import run as _runner
 
 
 load_dotenv()
@@ -21,7 +22,7 @@ async def setup() -> None:
     async with connect(DB_HOST) as _DB:
         try:
             await _DB.execute(
-                'CREATE TABLE questions IF NOT EXIST ('
+                'CREATE TABLE IF NOT EXISTS questions ('
                 'user INTEGER NOT NULL, '
                 'full_name TEXT, '
                 'question_id INTEGER NOT NULL, '
@@ -36,7 +37,7 @@ async def setup() -> None:
             )
 
             await _DB.execute(
-                'CREATE TABLE states IF NOT EXIST ('
+                'CREATE TABLE IF NOT EXISTS states ('
                 'user INTEGER NOT NULL, '
                 'state TEXT NOT NULL, '
                 'other_user INTEGER'
@@ -60,4 +61,4 @@ async def setup() -> None:
                 module='WAWILON-ANONQUESTIONS'
             )
 
-setup()
+_runner(setup())

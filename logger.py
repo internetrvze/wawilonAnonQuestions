@@ -106,7 +106,9 @@ class Logger():
                 f'{self.logTime} {module}: {log_level}: {message}',
                 parse_mode=parse_mode
             )
+            await self.logger.close_session()
             return True
         except BaseException as error:
             print(f'Exception was ocurred: {error}')
+            await self.logger.close_session()
             return False
