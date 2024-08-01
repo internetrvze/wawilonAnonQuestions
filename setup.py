@@ -1,3 +1,7 @@
+from os import system
+system('pip install python-dotenv aiosqlite pytelegrambotapi')
+del system
+
 from aiosqlite import connect
 from dotenv import load_dotenv
 from functools import lru_cache

@@ -18,7 +18,6 @@ from logger import Logger
 load_dotenv()
 bot = AsyncTeleBot(token=getenv('BOT_TOKEN'))
 admin_ids = loads(getenv('ADMINS'))
-print(admin_ids)
 logger = Logger()
 
 
@@ -33,10 +32,9 @@ class Keys:
 @bot.message_handler(commands=['start'])
 async def startCommand(message: Message) -> None:
     command = message.text.split(' ')
-    print(command)
     if len(command) >= 2 and command[1].isdigit():
         await bot.send_message(
-            message.chat.id,
+            message.from_user.id,
             'Задайте свой вопрос:\n'
             'Для отмены нажмите кнопку "❌ Отмена".',
             reply_markup=Keys.cancelQuestionButton
@@ -61,10 +59,9 @@ async def startCommand(message: Message) -> None:
 
 
 @bot.message_handler(content_types=['text'])
-async def getQuestion(message: Message) -> any:
+async def getQuestion(message: Message) -> None:
     other_user, qstate = await getState(message.from_user.id)
-    print(qstate)
-    print(other_user)
+
     if not other_user:
         return await startCommand(message)
 
@@ -162,27 +159,28 @@ async def getQuestion(message: Message) -> any:
         message.from_user.id, 'main'
     )
 
+
 @bot.callback_query_handler(func=lambda event: event.data == 'cancelQuestion')
 async def cancelQuestion(event: CallbackQuery) -> None:
     await setState(event.from_user.id, 'main')
 
     await bot.delete_message(
-        chat_id=event.chat_instance,
+        chat_id=event.from_user.id,
         message_id=event.message.id
     )
 
     await bot.send_message(
-        chat_id=event.chat_instance,
+        chat_id=event.from_user.id,
         text='📃 Вы были возвращены в главное меню.'
     )
 
-    return await startCommand(event.message)
+    return await startCommand(event)
 
 
 @bot.callback_query_handler(
         func=lambda event: event.data.startswith('whoAsked')
 )
-async def whoAsked(event: CallbackQuery) -> any:
+async def whoAsked(event: CallbackQuery) -> bool | Message:
     if event.from_user.id not in admin_ids:
         return await bot.answer_callback_query(
             event.id, text='Пошёл нахуй отсюдава🗿', show_alert=True
